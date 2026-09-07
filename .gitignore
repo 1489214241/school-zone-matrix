@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest_tmp/
+test_artifacts/
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Real inputs, labels, models and experiment outputs are local-only by default.
+/data/
+/outputs/
+/runs/
+/models/
+*.joblib
+*.pkl
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

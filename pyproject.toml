@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "school-zone-matrix"
+version = "0.1.0"
+description = "Gold-isolated direct community-to-school multilabel prediction"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "joblib>=1.3",
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "pyproj>=3.6",
+  "scikit-learn>=1.3",
+  "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+school-zone-matrix = "school_zone_matrix.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -p no:tmpdir"
