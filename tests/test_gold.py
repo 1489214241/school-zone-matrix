@@ -14,6 +14,8 @@ def test_official_positive_overrides_polygon_and_output_has_no_unknowns():
         {"community_id": "c2", "school_id": "s2", "label": 0, "observed": False},
         {"community_id": "c3", "school_id": "s1", "label": 0, "observed": True},
         {"community_id": "c3", "school_id": "s2", "label": 0, "observed": True},
+        {"community_id": "c4", "school_id": "s1", "label": 1, "observed": True},
+        {"community_id": "c4", "school_id": "s2", "label": 0, "observed": False},
     ])
     official = pd.DataFrame([
         {"community_id": "c1", "school_id": "s1", "evidence": "official_residence_field"},
@@ -29,6 +31,8 @@ def test_official_positive_overrides_polygon_and_output_has_no_unknowns():
     assert set(labels.community_id) == {"c1", "c2"}
     assert report["official_overrides"] == 2
     assert report["excluded_no_positive_communities"] == 1
+    assert report["excluded_residual_unobserved_communities"] == 1
+    assert report["residual_unobserved_edges_not_converted_to_zero"] == 1
     assert (output / "hybrid_complete_binary_labels.csv").exists()
     assert (output / "official_positive_overrides.csv").exists()
 

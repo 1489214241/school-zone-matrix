@@ -100,7 +100,7 @@ school-zone-matrix build-hybrid-gold \
   --output-dir runs/district_2026/hybrid_gold
 ```
 
-命令会输出不含未知标签的完整二值子集；没有任何正关系证据的小区整体排除，不会被转换成全0。详细规则见 [官方住宅字段优先的Hybrid Gold](docs/hybrid_gold.md)。
+命令会输出不含未知标签的完整二值子集；没有正关系证据或仍有未解决关系的小区整体排除，不会把未知值转换成0。详细规则见 [官方住宅字段优先的Hybrid Gold](docs/hybrid_gold.md)。
 
 生产模型使用全部可靠训练关系：
 

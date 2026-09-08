@@ -31,8 +31,9 @@ def build_hybrid_gold(
     already resolved official residence mentions.  An official edge is always
     positive, even when the base label is 0 or unobserved.
 
-    Communities with no positive evidence are excluded as whole rows from the
-    complete benchmark.  They are never silently converted to all-zero rows.
+    Communities with no positive evidence or any residual unknown relation are
+    excluded as whole rows from the complete benchmark. Unknowns are never
+    silently converted to zero.
     """
     required_base = set(KEYS + ["label", "observed"])
     required_official = set(KEYS)
@@ -76,9 +77,12 @@ def build_hybrid_gold(
     )
 
     work = base.merge(positive, on=KEYS, how="left", validate="one_to_one")
+    unresolved = ~work.observed & work.positive_evidence.isna()
     work["label"] = work.positive_evidence.notna().astype(int)
     work["observed"] = True
-    included_ids = set(work.loc[work.label.eq(1), "community_id"])
+    positive_community_ids = set(work.loc[work.label.eq(1), "community_id"])
+    unresolved_community_ids = set(work.loc[unresolved, "community_id"])
+    included_ids = positive_community_ids - unresolved_community_ids
     complete = work.loc[work.community_id.isin(included_ids), KEYS + ["label", "observed"]]
     complete = complete.sort_values(KEYS).reset_index(drop=True)
 
@@ -94,8 +98,10 @@ def build_hybrid_gold(
     )
     overrides = overrides.loc[~overrides.old_state.eq("1")].copy()
     overrides["new_label"] = 1
+    overrides["included_in_complete_binary_gold"] = overrides.community_id.isin(included_ids)
 
-    school_positive = positive.groupby("school_id").size()
+    complete_positive = positive.loc[positive.community_id.isin(included_ids)].copy()
+    school_positive = complete_positive.groupby("school_id").size()
     school_ids = sorted(set(base.school_id))
     zero_positive_schools = [school_id for school_id in school_ids if school_id not in school_positive]
     report = {
@@ -103,10 +109,14 @@ def build_hybrid_gold(
         "source_community_count": len(all_community_ids),
         "base_positive_edges": len(spatial),
         "official_positive_edges": len(official.drop_duplicates(KEYS)),
-        "hybrid_positive_edges": len(positive),
+        "hybrid_positive_edges_all_communities": len(positive),
+        "hybrid_positive_edges_in_complete_binary_gold": len(complete_positive),
         "official_overrides": len(overrides),
         "included_complete_binary_communities": len(included_ids),
-        "excluded_no_positive_communities": len(excluded_ids),
+        "excluded_communities": len(excluded_ids),
+        "excluded_no_positive_communities": len(all_community_ids - positive_community_ids),
+        "excluded_residual_unobserved_communities": len(positive_community_ids & unresolved_community_ids),
+        "residual_unobserved_edges_not_converted_to_zero": int(unresolved.sum()),
         "complete_binary_edges": len(complete),
         "complete_binary_has_unknown": False,
         "zero_positive_school_ids": zero_positive_schools,
@@ -116,11 +126,17 @@ def build_hybrid_gold(
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     complete.to_csv(output / "hybrid_complete_binary_labels.csv", index=False)
-    positive.to_csv(output / "hybrid_positive_edges.csv", index=False)
+    positive.to_csv(output / "hybrid_all_positive_edges_audit.csv", index=False)
+    complete_positive.to_csv(output / "hybrid_positive_edges.csv", index=False)
     overrides.sort_values(KEYS).to_csv(output / "official_positive_overrides.csv", index=False)
     pd.DataFrame({
         "community_id": excluded_ids,
-        "reason": "no_positive_evidence_excluded_from_complete_binary_gold",
+        "reason": [
+            "no_positive_evidence_excluded_from_complete_binary_gold"
+            if community_id not in positive_community_ids
+            else "residual_unobserved_relation_not_converted_to_zero"
+            for community_id in excluded_ids
+        ],
     }).to_csv(output / "excluded_communities.csv", index=False)
     (output / "hybrid_gold_report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
