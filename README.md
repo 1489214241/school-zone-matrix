@@ -91,6 +91,17 @@ school-zone-matrix audit-labels \
 
 该命令只生成审核报告，不修改标签。用法和判定边界见 [Gold可观测性审计](docs/gold_observability.md)。
 
+如果官方地图记录同时带有 Polygon 和住宅字段，应先完成住宅名称的实体消歧，再把这些关系作为不可被 Polygon 否决的正例构建新版 Gold：
+
+```bash
+school-zone-matrix build-hybrid-gold \
+  --base-labels data/polygon_labels.csv \
+  --official-positive-edges data/official_residence_positive_edges.csv \
+  --output-dir runs/district_2026/hybrid_gold
+```
+
+命令会输出不含未知标签的完整二值子集；没有任何正关系证据的小区整体排除，不会被转换成全0。详细规则见 [官方住宅字段优先的Hybrid Gold](docs/hybrid_gold.md)。
+
 生产模型使用全部可靠训练关系：
 
 ```bash

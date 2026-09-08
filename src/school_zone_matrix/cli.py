@@ -8,6 +8,7 @@ import pandas as pd
 
 from .audit import audit_gold_observability
 from .data import merge_extra_features, prepare_candidates, read_csv
+from .gold import build_hybrid_gold
 from .modeling import crossfit_predict, evaluate_frozen, predict_new, train_release
 
 
@@ -59,6 +60,15 @@ def audit_command(args):
     print(report)
 
 
+def build_hybrid_gold_command(args):
+    _, report = build_hybrid_gold(
+        read_csv(args.base_labels),
+        read_csv(args.official_positive_edges),
+        args.output_dir,
+    )
+    print(report)
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="school-zone-matrix")
     sub = parser.add_subparsers(required=True)
@@ -98,6 +108,14 @@ def build_parser():
     audit.add_argument("--small-polygon-threshold-m2", type=float, default=50_000.0)
     audit.add_argument("--output-dir", required=True)
     audit.set_defaults(func=audit_command)
+    hybrid = sub.add_parser(
+        "build-hybrid-gold",
+        help="make official residence mentions hard positives and emit a complete binary Gold subset",
+    )
+    hybrid.add_argument("--base-labels", required=True)
+    hybrid.add_argument("--official-positive-edges", required=True)
+    hybrid.add_argument("--output-dir", required=True)
+    hybrid.set_defaults(func=build_hybrid_gold_command)
     return parser
 
 
