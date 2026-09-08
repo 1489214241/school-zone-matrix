@@ -6,6 +6,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
+from .audit import audit_gold_observability
 from .data import merge_extra_features, prepare_candidates, read_csv
 from .modeling import crossfit_predict, evaluate_frozen, predict_new, train_release
 
@@ -45,6 +46,19 @@ def predict_command(args):
     print(f"wrote relations and matrices to {output_dir}")
 
 
+def audit_command(args):
+    geometry = read_csv(args.geometry_stats) if args.geometry_stats else None
+    _, report = audit_gold_observability(
+        read_csv(args.labels),
+        read_csv(args.schools),
+        read_csv(args.descriptions),
+        args.output_dir,
+        geometry_stats=geometry,
+        small_polygon_threshold_m2=args.small_polygon_threshold_m2,
+    )
+    print(report)
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="school-zone-matrix")
     sub = parser.add_subparsers(required=True)
@@ -76,6 +90,14 @@ def build_parser():
     predict.add_argument("--candidates", required=True)
     predict.add_argument("--output-dir", required=True)
     predict.set_defaults(func=predict_command)
+    audit = sub.add_parser("audit-labels", help="diagnose zero-positive and granularity-mismatched Gold columns")
+    audit.add_argument("--labels", required=True)
+    audit.add_argument("--schools", required=True)
+    audit.add_argument("--descriptions", required=True)
+    audit.add_argument("--geometry-stats")
+    audit.add_argument("--small-polygon-threshold-m2", type=float, default=50_000.0)
+    audit.add_argument("--output-dir", required=True)
+    audit.set_defaults(func=audit_command)
     return parser
 
 

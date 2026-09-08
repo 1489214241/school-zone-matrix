@@ -78,6 +78,19 @@ school-zone-matrix evaluate \
   --output-dir runs/district_2026/evaluation
 ```
 
+在正式冻结预测前，可先只读检查 Gold 是否存在“整所学校无正例”、校园尺度 Polygon 或楼栋规则与小区中心点粒度冲突：
+
+```bash
+school-zone-matrix audit-labels \
+  --labels data/labels.csv \
+  --schools data/schools.csv \
+  --descriptions data/descriptions.csv \
+  --geometry-stats data/school_geometry_stats.csv \
+  --output-dir runs/district_2026/gold_audit
+```
+
+该命令只生成审核报告，不修改标签。用法和判定边界见 [Gold可观测性审计](docs/gold_observability.md)。
+
 生产模型使用全部可靠训练关系：
 
 ```bash
