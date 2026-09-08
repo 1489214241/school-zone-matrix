@@ -61,10 +61,12 @@ def audit_command(args):
 
 
 def build_hybrid_gold_command(args):
+    resolved_negative = read_csv(args.resolved_negative_edges) if args.resolved_negative_edges else None
     _, report = build_hybrid_gold(
         read_csv(args.base_labels),
         read_csv(args.official_positive_edges),
         args.output_dir,
+        resolved_negative_edges=resolved_negative,
     )
     print(report)
 
@@ -114,6 +116,7 @@ def build_parser():
     )
     hybrid.add_argument("--base-labels", required=True)
     hybrid.add_argument("--official-positive-edges", required=True)
+    hybrid.add_argument("--resolved-negative-edges")
     hybrid.add_argument("--output-dir", required=True)
     hybrid.set_defaults(func=build_hybrid_gold_command)
     return parser

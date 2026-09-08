@@ -52,3 +52,41 @@ def test_official_edges_must_belong_to_base_universe():
         assert "outside the base universe" in str(error)
     else:
         raise AssertionError("unknown official edge was accepted")
+
+
+def test_reviewed_negative_resolves_unknown_without_silent_conversion():
+    base = pd.DataFrame([
+        {"community_id": "c1", "school_id": "s1", "label": 1, "observed": True},
+        {"community_id": "c1", "school_id": "s2", "label": 0, "observed": False},
+    ])
+    official = pd.DataFrame(columns=["community_id", "school_id"])
+    negative = pd.DataFrame([
+        {"community_id": "c1", "school_id": "s2", "label": 0, "evidence": "exhaustive_official_list"},
+    ])
+    output = Path("test_artifacts") / f"hybrid-gold-negative-{uuid4().hex}"
+
+    labels, report = build_hybrid_gold(base, official, output, resolved_negative_edges=negative)
+
+    assert labels.set_index(["community_id", "school_id"]).label.to_dict() == {
+        ("c1", "s1"): 1,
+        ("c1", "s2"): 0,
+    }
+    assert report["resolved_negative_unknowns_to_zero"] == 1
+    assert report["residual_unobserved_edges_not_converted_to_zero"] == 0
+    assert (output / "resolved_negative_overrides.csv").exists()
+
+
+def test_reviewed_negative_cannot_override_a_positive():
+    base = pd.DataFrame([
+        {"community_id": "c1", "school_id": "s1", "label": 1, "observed": True},
+    ])
+    official = pd.DataFrame(columns=["community_id", "school_id"])
+    negative = pd.DataFrame([{"community_id": "c1", "school_id": "s1", "label": 0}])
+    output = Path("test_artifacts") / f"hybrid-gold-negative-conflict-{uuid4().hex}"
+
+    try:
+        build_hybrid_gold(base, official, output, resolved_negative_edges=negative)
+    except ValueError as error:
+        assert "observed base positive" in str(error)
+    else:
+        raise AssertionError("reviewed negative silently overrode a positive")
